@@ -20,7 +20,8 @@ namespace SPI_ISBNChecker
                 //Use regular expressions to check the correctness of isbn-10 format,
                 //e.g. 7-309-04547-5 or 7-309-04547-X or 7 309 04547 5 or 7309045475 
                 bool isbnFormatValidation = (Regex.IsMatch(input, @"^\d+-\d+-\d+-[0-9xX]$") ||
-                                       Regex.IsMatch(input, @"^\d+\s\d+\s\d+\s[0-9xX]$")) &&
+                                       Regex.IsMatch(input, @"^\d+\s\d+\s\d+\s[0-9xX]$") ||
+                                       Regex.IsMatch(input, @"^[0-9]{9}[0-9xX]$")) &&
                                        Regex.Replace(input, @"[\s-]", "").Length == 10;
 
                 if (IsValidISBN(Regex.Replace(input, @"[\s-]", "")) && isbnFormatValidation)
