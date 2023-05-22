@@ -12,18 +12,23 @@ namespace SPI_ISBNChecker
             {
                 Console.WriteLine("Bitte geben Sie eine 10-stellige ISBN ein:");
 
-                string input = Console.ReadLine() ?? "".Trim();
+                string input = Console.ReadLine() ?? "";
 
-                ISBNChecker checker = new ISBNChecker();
-                bool isValid = checker.CheckISBN(input);
+                ISBNChecker checker = new ISBNChecker(input);
 
-                if (isValid)
-                {
-                    Console.WriteLine("Die eingegebene ISBN ist gueltig.");
+                if (checker.isFormatValid) {
+                    if (checker.isValid)
+                    {
+                        Console.WriteLine("Die eingegebene {0} ist gueltig.", checker.typeISBN);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Die eingegebene {0} ist ungueltig.", checker.typeISBN);
+                    }
                 }
                 else
                 {
-                    Console.WriteLine("Die eingegebene ISBN ist ungueltig.");
+                    Console.WriteLine("Ungueltiges Format.");
                 }
 
                 Console.WriteLine("Moechten Sie eine weitere ISBN ueberpruefen? (J/N)");
@@ -39,76 +44,97 @@ namespace SPI_ISBNChecker
 
         }
 
-        static bool IsValidISBN(string input)
-        {
-            int checksum = 0;
-            for (int i = 0; i < 9; i++)
-            {
-                checksum += (input[i] - '0') * (10 - i);
-            }
-            //check if the last character is number.
-            //If not number (it's X) then convert it to 10 
-            int lastDigit = !Char.IsDigit(input[9]) ? 10 : input[9] - '0';
-            checksum += lastDigit;
-
-            return checksum % 11 == 0;
-        }
-
     }
 
     public class ISBNChecker {
 
-        private readonly Regex isbnFormatRegex;
+        private readonly Regex isbn10FormatRegex;
+        private readonly Regex isbn13FormatRegex;
 
-        public ISBNChecker()
-        {
-            //Use regular expressions to check the correctness of isbn-10 format,
-            //e.g. 7-309-04547-5 or 7-309-04547-X or 7 309 04547 5 or 7309045475 
-            isbnFormatRegex = new Regex(@"^\d+-\d+-\d+-[0-9xX]$ || 
-                                        ^\d+\s\d+\s\d+\s[0-9xX]$ || 
-                                        ^[0-9]{9}[0-9xX]$");
-        }
+        public bool isFormatValid = true;
+        public bool isValid = false;
+        public string typeISBN = "";
 
-        private string CleanInput(string input)
+        public ISBNChecker(string input)
         {
-            //Replace multiple consecutive spaces in a string with a single space
-            string cleanedInput = Regex.Replace(input, @"\s+", " ");
-            return cleanedInput;
+            //Use regular expressions to check the correctness of the format,
+            //e.g. for ISBN-10: 7-309-04547-5 or 7-309-04547-X or 7 309 04547 5 or 7309045475 
+            isbn10FormatRegex = new Regex(@"^\d+[- ]\d+[- ]\d+[- ][0-9xX]$|^[0-9]{9}[0-9xX]$");
+            //e.g. for ISBN-13: 978-986-181-728-6 or 978 986 181 728 6 or 9789861817286
+            isbn13FormatRegex = new Regex(@"^\d+[- ]\d+[- ]\d+[- ]\d+[- ][0-9]$|^[0-9]{13}$");
+
+            isValid = CheckISBN(input);
         }
 
         public bool CheckISBN(string input)
         {
             string cleanedInput = CleanInput(input);
-            bool isFormatValid = CheckFormatISBN(cleanedInput);
 
-            return isFormatValid && CheckValidityISBN(cleanedInput);
+            if (CheckFormatISBN10(cleanedInput))
+            {
+                this.typeISBN = "ISBN-10";
+                return CheckValidityISBN10(cleanedInput);
+            }
+            else if (CheckFormatISBN13(cleanedInput))
+            {
+                this.typeISBN = "ISBN-13";
+                return CheckValidityISBN13(cleanedInput);
+            }
+            else {
+                this.isFormatValid = false;
+                return false;
+            }
         }
 
-        public bool CheckFormatISBN(string input)
+        private string CleanInput(string input)
         {
-            string cleanedInput = CleanInput(input);
-            bool isFormatValid = isbnFormatRegex.IsMatch(cleanedInput) &&
-                                    Regex.Replace(cleanedInput, @"[\s-]", "").Length == 10;
+            //Replace multiple consecutive spaces in a string with a single space
+            string cleanedInput = Regex.Replace(input, @"\s+", " ").Trim();
+            return cleanedInput;
+        }
 
-            bool a = isbnFormatRegex.IsMatch(cleanedInput);
-            bool b = Regex.Replace(cleanedInput, @"[\s-]", "").Length == 10;
+        public bool CheckFormatISBN10(string input)
+        {
+            isFormatValid = isbn10FormatRegex.IsMatch(input) && Regex.Replace(input, @"[\s-]", "").Length == 10;
 
             return isFormatValid;
         }
 
-        private bool CheckValidityISBN(string input)
+        public bool CheckFormatISBN13(string input)
         {
+            isFormatValid = isbn13FormatRegex.IsMatch(input) && Regex.Replace(input, @"[\s-]", "").Length == 13;
+
+            return isFormatValid;
+        }
+
+        private bool CheckValidityISBN10(string input)
+        {
+            input = Regex.Replace(input, @"[\s-]", "");
             int checksum = 0;
             for (int i = 0; i < 9; i++)
             {
-                checksum += (input[i] - '0') * (10 - i);
+                checksum += int.Parse(input[i].ToString()) * (10 - i);
             }
             //check if the last character is number.
             //If not number (it's X) then convert it to 10 
-            int lastDigit = !Char.IsDigit(input[9]) ? 10 : input[9] - '0';
+            int lastDigit = !Char.IsDigit(input[9]) ? 10 : int.Parse(input[9].ToString());
             checksum += lastDigit;
 
             return checksum % 11 == 0;
+        }
+
+        private bool CheckValidityISBN13(string input)
+        {
+            input = Regex.Replace(input, @"[\s-]", "");
+            int checksum = 0;
+            for (int i = 0; i < 12; i++)
+            {
+                checksum += (i % 2 == 0) ? int.Parse(input[i].ToString()) : int.Parse(input[i].ToString()) * 3;
+            }
+            int lastDigit = int.Parse(input[12].ToString());
+            checksum += lastDigit;
+
+            return checksum % 10 == 0;
         }
     }
 }
