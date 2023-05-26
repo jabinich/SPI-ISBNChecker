@@ -65,7 +65,7 @@ namespace SPI_ISBNChecker
             //or 978 986 181 728 6 using \d{3}\ \d+\ \d+\ \d+\ [0-9]
             //or 9789861817286 using [0-9]{13}
             //And extend the expression above with 'positive Lookahead' to restrict the length:
-            //using (?=(?:\D*\d){13}$)
+            //using (?=(?:\D*\d){13}\D*$)
 
             isbn13FormatRegex = new Regex(@"^(?=(?:\D*\d){13}\D*$)(\d{3}\-\d+\-\d+\-\d+\-[0-9]$|\d{3}\ \d+\ \d+\ \d+\ [0-9]$|[0-9]{13})$");
 
