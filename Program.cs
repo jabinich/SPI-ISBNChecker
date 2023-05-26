@@ -7,24 +7,17 @@ namespace SPI_ISBNChecker
         static void Main(string[] args)
         {
             bool continueValidation = true;
+            ISBNChecker checker = new ISBNChecker();
 
             while (continueValidation)
             {
-                Console.WriteLine("Bitte geben Sie eine 10-stellige ISBN ein:");
+                Console.WriteLine("Bitte geben Sie eine ISBN ein:");
 
                 string input = Console.ReadLine() ?? "";
-
-                ISBNChecker checker = new ISBNChecker(input);
-
-                if (checker.isFormatValid) {
-                    if (checker.isValid)
-                    {
-                        Console.WriteLine("Die eingegebene {0} ist gueltig.", checker.typeISBN);
-                    }
-                    else
-                    {
-                        Console.WriteLine("Die eingegebene {0} ist ungueltig.", checker.typeISBN);
-                    }
+                checker.CheckISBN(input);
+                
+                if (checker.IsFormatValid) {
+                    Console.WriteLine("Die eingegebene {0} ist {1}.", checker.ISBNFormat, checker.IsISBNValid ? "gueltig" : "ungueltig");
                 }
                 else
                 {
@@ -51,38 +44,54 @@ namespace SPI_ISBNChecker
         private readonly Regex isbn10FormatRegex;
         private readonly Regex isbn13FormatRegex;
 
-        public bool isFormatValid = true;
-        public bool isValid = false;
-        public string typeISBN = "";
+        public bool IsFormatValid { get; private set; }
+        public bool IsISBNValid { get; private set; }
+        public string ISBNFormat { get; private set; }
 
-        public ISBNChecker(string input)
+        public ISBNChecker()
         {
             //Use regular expressions to check the correctness of the format,
-            //e.g. for ISBN-10: 7-309-04547-5 or 7-309-04547-X or 7 309 04547 5 or 7309045475 
-            isbn10FormatRegex = new Regex(@"^\d+[- ]\d+[- ]\d+[- ][0-9xX]$|^[0-9]{9}[0-9xX]$");
-            //e.g. for ISBN-13: 978-986-181-728-6 or 978 986 181 728 6 or 9789861817286
-            isbn13FormatRegex = new Regex(@"^\d+[- ]\d+[- ]\d+[- ]\d+[- ][0-9]$|^[0-9]{13}$");
+            //for ISBN-10:
+            //e.g. 7-309-04547-5,7-309-04547-X using \d+\-\d+\-\d+\-[0-9xX]
+            //or 7 309 04547 5 using \d+\ \d+\ \d+\ [0-9xX]
+            //or 7309045475 using [0-9]{9}[0-9xX] 
+            //And extend the expression above with 'positive Lookahead' to restrict the length:
+            //using (?=(?:\D*\d){9}\D*[0-9xX]$)
+            
+            isbn10FormatRegex = new Regex(@"^(?=(?:\D*\d){9}\D*[0-9xX]$)(\d+\-\d+\-\d+\-[0-9xX]$|\d+\ \d+\ \d+\ [0-9xX]$|[0-9]{9}[0-9xX])$");
 
-            isValid = CheckISBN(input);
+            //for ISBN-13:
+            //e.g. 978-986-181-728-6 using \d{3}\-\d+\-\d+\-\d+\-[0-9]
+            //or 978 986 181 728 6 using \d{3}\ \d+\ \d+\ \d+\ [0-9]
+            //or 9789861817286 using [0-9]{13}
+            //And extend the expression above with 'positive Lookahead' to restrict the length:
+            //using (?=(?:\D*\d){13}$)
+
+            isbn13FormatRegex = new Regex(@"^(?=(?:\D*\d){13}\D*$)(\d{3}\-\d+\-\d+\-\d+\-[0-9]$|\d{3}\ \d+\ \d+\ \d+\ [0-9]$|[0-9]{13})$");
+
+            ISBNFormat = string.Empty;
         }
 
-        public bool CheckISBN(string input)
+        public void CheckISBN(string input)
         {
             string cleanedInput = CleanInput(input);
 
             if (CheckFormatISBN10(cleanedInput))
             {
-                this.typeISBN = "ISBN-10";
-                return CheckValidityISBN10(cleanedInput);
+                IsFormatValid = true;
+                ISBNFormat = "ISBN-10";
+                IsISBNValid = CheckValidityISBN10(cleanedInput);
             }
             else if (CheckFormatISBN13(cleanedInput))
             {
-                this.typeISBN = "ISBN-13";
-                return CheckValidityISBN13(cleanedInput);
+                IsFormatValid = true;
+                ISBNFormat = "ISBN-13";
+                IsISBNValid = CheckValidityISBN13(cleanedInput);
             }
             else {
-                this.isFormatValid = false;
-                return false;
+                IsFormatValid = false;
+                ISBNFormat = "";
+                IsISBNValid = false;
             }
         }
 
@@ -93,18 +102,15 @@ namespace SPI_ISBNChecker
             return cleanedInput;
         }
 
-        public bool CheckFormatISBN10(string input)
+        private bool CheckFormatISBN10(string input)
         {
-            isFormatValid = isbn10FormatRegex.IsMatch(input) && Regex.Replace(input, @"[\s-]", "").Length == 10;
-
-            return isFormatValid;
+            bool t = isbn10FormatRegex.IsMatch(input);
+            return isbn10FormatRegex.IsMatch(input);
         }
 
-        public bool CheckFormatISBN13(string input)
+        private bool CheckFormatISBN13(string input)
         {
-            isFormatValid = isbn13FormatRegex.IsMatch(input) && Regex.Replace(input, @"[\s-]", "").Length == 13;
-
-            return isFormatValid;
+            return isbn13FormatRegex.IsMatch(input);
         }
 
         private bool CheckValidityISBN10(string input)
