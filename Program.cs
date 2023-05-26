@@ -104,7 +104,6 @@ namespace SPI_ISBNChecker
 
         private bool CheckFormatISBN10(string input)
         {
-            bool t = isbn10FormatRegex.IsMatch(input);
             return isbn10FormatRegex.IsMatch(input);
         }
 
