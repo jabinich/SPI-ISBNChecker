@@ -58,7 +58,7 @@ namespace SPI_ISBNChecker
             //And extend the expression above with 'positive Lookahead' to restrict the length:
             //using (?=(?:\D*\d){9}\D*[0-9xX]$)
             
-            isbn10FormatRegex = new Regex(@"^(?=(?:\D*\d){9}\D*[0-9xX]$)(\d+\-\d+\-\d+\-[0-9xX]$|\d+\ \d+\ \d+\ [0-9xX]$|[0-9]{9}[0-9xX])$");
+            isbn10FormatRegex = new Regex(@"^(?=(?:\D*\d){9}\D*[0-9xX]$)(\d+\-\d+\-\d+\-[0-9xX]|\d+\ \d+\ \d+\ [0-9xX]|[0-9]{9}[0-9xX])$");
 
             //for ISBN-13:
             //e.g. 978-986-181-728-6 using \d{3}\-\d+\-\d+\-\d+\-[0-9]
@@ -67,7 +67,7 @@ namespace SPI_ISBNChecker
             //And extend the expression above with 'positive Lookahead' to restrict the length:
             //using (?=(?:\D*\d){13}\D*$)
 
-            isbn13FormatRegex = new Regex(@"^(?=(?:\D*\d){13}\D*$)(\d{3}\-\d+\-\d+\-\d+\-[0-9]$|\d{3}\ \d+\ \d+\ \d+\ [0-9]$|[0-9]{13})$");
+            isbn13FormatRegex = new Regex(@"^(?=(?:\D*\d){13}\D*$)(\d{3}\-\d+\-\d+\-\d+\-[0-9]|\d{3}\ \d+\ \d+\ \d+\ [0-9]|[0-9]{13})$");
 
             ISBNFormat = string.Empty;
         }
@@ -118,12 +118,12 @@ namespace SPI_ISBNChecker
             int checksum = 0;
             for (int i = 0; i < 9; i++)
             {
-                checksum += int.Parse(input[i].ToString()) * (10 - i);
+                checksum += int.Parse(input[i].ToString()) * (i + 1);
             }
             //check if the last character is number.
             //If not number (it's X) then convert it to 10 
             int lastDigit = !Char.IsDigit(input[9]) ? 10 : int.Parse(input[9].ToString());
-            checksum += lastDigit;
+            checksum -= lastDigit;
 
             return checksum % 11 == 0;
         }
